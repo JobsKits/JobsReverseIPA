@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ipa-reverse-tool"
+version = "0.1.0"
+description = "IPA static reverse analysis and environment diagnostics MVP"
+requires-python = ">=3.10"
+dependencies = [
+  "macholib>=1.16.3",
+  "lief>=0.14.0",
+  "r2pipe>=1.9.4",
+  "jinja2>=3.1.0",
+  "rich>=13.0.0",
+  "PySide6>=6.6.0",
+]
+
+[project.scripts]
+ipa-reverse-tool = "ipa_reverse_tool.cli:main"
+
+[project.gui-scripts]
+ipa-reverse-tool-gui = "ipa_reverse_tool.gui:run_gui"

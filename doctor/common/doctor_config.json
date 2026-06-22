@@ -1,0 +1,23 @@
+{
+  "required_python_packages": [
+    "macholib",
+    "lief",
+    "r2pipe",
+    "jinja2",
+    "rich",
+    "PySide6"
+  ],
+  "reverse_tools": [
+    "radare2",
+    "rabin2",
+    "Ghidra",
+    "jtool2"
+  ],
+  "macos_clt_tools": [
+    "otool",
+    "nm",
+    "codesign",
+    "plutil",
+    "xcrun"
+  ]
+}

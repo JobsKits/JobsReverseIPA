@@ -1,0 +1,12 @@
+{
+  "macos": {
+    "xcode_command_line_tools": "xcode-select --install",
+    "radare2": "brew install radare2",
+    "openjdk": "brew install openjdk"
+  },
+  "windows": {
+    "radare2": "安装 radare2 Windows 版，或把 radare2.exe / rabin2.exe 放入 tools/windows-x64",
+    "ghidra": "安装 Ghidra 并配置 analyzeHeadless 路径",
+    "java": "安装 OpenJDK，并确认 java.exe 在 PATH 中"
+  }
+}
