@@ -1,15 +1,15 @@
 #!/bin/zsh
 # 脚本自述：
-# - 脚本名称：build_macos.command
+# - 脚本名称：【MacOS】📦生成dmg.command
 # - 核心用途：从 Python 源码构建 IPA Reverse Analysis Tool.app 和可拖入 Applications 的 DMG。
-# - 影响范围：会创建或复用项目 .venv，并在确认后删除旧 build / dist 构建目录。
+# - 影响范围：会创建或复用内层 JobsReverseIPA/.venv，并在确认后删除旧 build / dist 构建目录。
 # - 运行提示：运行后先打印内置自述；按回车确认后继续，按 Ctrl+C 可取消。
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%x}}")" && pwd)"
 SCRIPT_PATH="${SCRIPT_DIR}/$(basename -- "$0")"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd -P)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/JobsReverseIPA" && pwd -P)"
 SCRIPT_BASENAME=$(basename "$0" | sed 's/\.[^.]*$//')
-LOG_FILE="/tmp/${SCRIPT_BASENAME}.log"
+LOG_FILE="${TMPDIR:-/tmp}/${SCRIPT_BASENAME}.log"
 
 VENV_DIR="${PROJECT_ROOT}/.venv"
 BUILD_DIR="${PROJECT_ROOT}/build"
@@ -45,7 +45,7 @@ show_script_intro_and_wait() {
   highlight_echo "============================== 脚本自述 =============================="
   note_echo "当前脚本：${SCRIPT_PATH}"
   note_echo "核心用途：从 Python 源码构建 macOS App 和 DMG 安装包。"
-  warn_echo "影响范围：确认后会安装构建依赖；清理旧 build / dist 前必须输入 YES。"
+  warn_echo "影响范围：确认后会在内层 JobsReverseIPA/ 安装构建依赖；清理旧 build / dist 前必须输入 YES。"
   gray_echo "输出目录：${DIST_DIR}"
   gray_echo "日志位置：${LOG_FILE}"
   gray_echo "取消方式：按 Ctrl+C 终止。"

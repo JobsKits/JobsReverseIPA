@@ -3,7 +3,7 @@ chcp 65001 >nul
 setlocal EnableExtensions
 
 set "SCRIPT_DIR=%~dp0"
-for %%I in ("%SCRIPT_DIR%..") do set "PROJECT_ROOT=%%~fI"
+for %%I in ("%SCRIPT_DIR%JobsReverseIPA") do set "PROJECT_ROOT=%%~fI"
 cd /d "%PROJECT_ROOT%"
 
 set "APP_NAME=IPA Reverse Analysis Tool"
@@ -35,9 +35,9 @@ echo 项目目录：%PROJECT_ROOT%
 echo 用途：从 Python 源码构建 Windows GUI 主程序和环境体检 exe。
 echo.
 echo 构建流程：
-echo   1. 在项目根目录创建或复用 .venv。
-echo   2. 安装 requirements.txt 中的运行和构建依赖。
-echo   3. 经 YES 确认后清理旧 build / dist。
+echo   1. 在内层 JobsReverseIPA 目录创建或复用 .venv。
+echo   2. 安装 JobsReverseIPA\requirements.txt 中的运行和构建依赖。
+echo   3. 经 YES 确认后清理 JobsReverseIPA\build / JobsReverseIPA\dist。
 echo   4. 使用统一 spec 构建 Windows GUI 程序目录。
 echo   5. 构建 IPA环境体检.exe 并复制到主程序目录。
 echo.
