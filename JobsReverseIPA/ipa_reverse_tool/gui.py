@@ -6,8 +6,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, QObject, QStandardPaths, QThread, Qt, QUrl, Signal, Slot
-from PySide6.QtGui import QDesktopServices, QDragEnterEvent, QDropEvent
+from PySide6.QtCore import QEvent, QObject, QStandardPaths, QThread, Qt, QTimer, QUrl, Signal, Slot
+from PySide6.QtGui import QAction, QCloseEvent, QDesktopServices, QDragEnterEvent, QDropEvent, QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -16,11 +16,14 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMainWindow,
+    QMenu,
     QMessageBox,
     QPlainTextEdit,
     QProgressBar,
     QPushButton,
     QSizePolicy,
+    QStyle,
+    QSystemTrayIcon,
     QVBoxLayout,
     QWidget,
 )
@@ -110,12 +113,79 @@ class MainWindow(QMainWindow):
         self.worker_thread: QThread | None = None
         self.worker: AnalysisWorker | None = None
         self.last_report: Path | None = None
+        self._quitting = False
+        self._tray_icon: QSystemTrayIcon | None = None
         self.setWindowTitle("IPA Reverse Analysis Tool")
         self.resize(860, 690)
         self.setMinimumSize(720, 580)
         self.setAcceptDrops(True)
         self._build_ui()
         self._apply_style()
+        self._setup_system_tray()
+
+    @staticmethod
+    def _resource_path(name: str) -> Path:
+        source_root = Path(__file__).resolve().parents[1]
+        bundle_root = Path(getattr(sys, "_MEIPASS", source_root))
+        return bundle_root / name
+
+    def _setup_system_tray(self) -> None:
+        if not QSystemTrayIcon.isSystemTrayAvailable():
+            return
+        icon = QIcon(str(self._resource_path("icon.png")))
+        if icon.isNull():
+            icon = self.style().standardIcon(QStyle.StandardPixmap.SP_ComputerIcon)
+        self.setWindowIcon(icon)
+        menu = QMenu(self)
+        show_action = QAction("显示 IPA Reverse Analysis Tool", menu)
+        quit_action = QAction("退出 IPA Reverse Analysis Tool", menu)
+        show_action.triggered.connect(self._restore_from_system_tray)
+        quit_action.triggered.connect(self._quit_application)
+        menu.addAction(show_action)
+        menu.addSeparator()
+        menu.addAction(quit_action)
+        self._tray_icon = QSystemTrayIcon(icon, self)
+        self._tray_icon.setToolTip("IPA Reverse Analysis Tool")
+        self._tray_icon.setContextMenu(menu)
+        self._tray_icon.activated.connect(self._on_system_tray_activated)
+        self._tray_icon.show()
+
+    def _hide_to_system_tray(self) -> None:
+        if self._tray_icon is not None and self._tray_icon.isVisible():
+            self.hide()
+
+    def _restore_from_system_tray(self) -> None:
+        self.showNormal()
+        self.raise_()
+        self.activateWindow()
+
+    def _on_system_tray_activated(
+        self,
+        reason: QSystemTrayIcon.ActivationReason,
+    ) -> None:
+        if reason in {
+            QSystemTrayIcon.ActivationReason.Trigger,
+            QSystemTrayIcon.ActivationReason.DoubleClick,
+        }:
+            self._restore_from_system_tray()
+
+    def _quit_application(self) -> None:
+        self._quitting = True
+        if self._tray_icon is not None:
+            self._tray_icon.hide()
+        QApplication.quit()
+
+    def changeEvent(self, event: QEvent) -> None:  # noqa: N802
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.WindowStateChange and self.isMinimized():
+            QTimer.singleShot(0, self._hide_to_system_tray)
+
+    def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
+        self._quitting = True
+        if self._tray_icon is not None:
+            self._tray_icon.hide()
+        event.accept()
+        QTimer.singleShot(0, QApplication.quit)
 
     def _build_ui(self) -> None:
         root = QWidget()
@@ -321,6 +391,7 @@ class MainWindow(QMainWindow):
 def run_gui(argv: list[str] | None = None) -> int:
     app = IpaApplication(argv or sys.argv)
     app.setApplicationName("IPA Reverse Analysis Tool")
+    app.setQuitOnLastWindowClosed(False)
     window = MainWindow()
     app.file_opened.connect(window.set_ipa_path)
     window.show()

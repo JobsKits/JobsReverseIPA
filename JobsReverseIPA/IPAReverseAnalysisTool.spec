@@ -6,6 +6,7 @@ from pathlib import Path
 project_root = Path(SPECPATH).resolve()
 app_name = "IPA Reverse Analysis Tool"
 datas = [
+    (str(project_root / "icon.png"), "."),
     (str(project_root / "rules"), "rules"),
     (str(project_root / "templates"), "templates"),
     (str(project_root / "tools"), "tools"),

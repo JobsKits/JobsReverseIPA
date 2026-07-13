@@ -93,7 +93,7 @@ python3 -m ipa_reverse_tool.main gui
 
 ## 四、当前能力 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
-- GUI：拖入 IPA、文件选择、输出目录、进度、日志、打开报告。
+- GUI：拖入 IPA、文件选择、输出目录、进度、日志、打开报告；macOS 最小化后驻留系统顶部菜单栏，可从图标恢复或退出。
 - 环境体检：Python 包、Apple CLT、radare2、Ghidra、Java、jtool2。
 - IPA 解包：定位 `Payload/*.app`。
 - `Info.plist`：基础字段、权限、URL Scheme、ATS、后台模式。
