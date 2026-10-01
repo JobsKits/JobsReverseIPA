@@ -3,6 +3,8 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$BuildStamp = Get-Date -Format "yyyy.MM.dd HH-mm-ss"
+$OutputDir = Join-Path (Split-Path -Parent $ProjectRoot) "dist\$BuildStamp"
 Set-Location $ProjectRoot
 
 if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
@@ -12,10 +14,11 @@ if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
 python -m pip install --upgrade pip
 python -m pip install pyinstaller
 python -m PyInstaller `
+    --distpath "$OutputDir" `
     --onefile `
     --console `
     --name "IPA环境体检" `
     --paths "$ProjectRoot" `
     "$ProjectRoot\doctor\doctor_entry.py"
 
-Write-Host "构建完成：$ProjectRoot\dist\IPA环境体检.exe"
+Write-Host "构建完成：$OutputDir\IPA环境体检.exe"

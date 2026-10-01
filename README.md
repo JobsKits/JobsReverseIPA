@@ -55,8 +55,8 @@
 构建产物：
 
 ```text
-./JobsReverseIPA/dist/IPA Reverse Analysis Tool.app
-./JobsReverseIPA/dist/IPA-Reverse-Analysis-Tool-macOS.dmg
+./dist/YYYY.MM.DD HH-mm-ss/IPA Reverse Analysis Tool.app
+./dist/YYYY.MM.DD HH-mm-ss/IPA-Reverse-Analysis-Tool-macOS.dmg
 ```
 
 ### 2.2、Windows
@@ -72,14 +72,14 @@
 构建产物：
 
 ```text
-.\JobsReverseIPA\dist\IPA Reverse Analysis Tool\IPA Reverse Analysis Tool.exe
-.\JobsReverseIPA\dist\IPA Reverse Analysis Tool\IPA环境体检.exe
+.\dist\YYYY.MM.DD HH-mm-ss\IPA Reverse Analysis Tool\IPA Reverse Analysis Tool.exe
+.\dist\YYYY.MM.DD HH-mm-ss\IPA Reverse Analysis Tool\IPA环境体检.exe
 ```
 
 ## 三、成品运行 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 - macOS 用户通过生成的 `.dmg` 安装或直接运行其中的 `IPA Reverse Analysis Tool.app`。
-- Windows 用户运行 `.\JobsReverseIPA\dist\IPA Reverse Analysis Tool\IPA Reverse Analysis Tool.exe`。
+- Windows 用户运行 `.\dist\YYYY.MM.DD HH-mm-ss\IPA Reverse Analysis Tool\IPA Reverse Analysis Tool.exe`。
 - 环境体检工具随构建产物一起分发；macOS 体检脚本位于 DMG 内，Windows 体检程序位于主程序目录内。
 
 源码调试仅面向开发维护，可进入内层 Python 工程后运行：
@@ -107,5 +107,13 @@ python3 -m ipa_reverse_tool.main gui
 - macOS 构建脚本只做本机 ad-hoc 签名，正式公开分发仍需 Developer ID 签名和 notarization。
 - Windows 构建未做代码签名，SmartScreen 可能提示未知发布者。
 - 构建脚本会在内层 `./JobsReverseIPA/` 里创建 `.venv`，并在用户输入 `YES` 后删除旧 `build` / `dist`。
+
+打包前会清理该应用工程的旧 `dist` 产物，清理失败则停止；成功后自动打开当前平台产物的磁盘位置并运行本次生成的 APP / EXE，结尾无需回车。失败时不启动软件；运行前的防误触确认保留。
+
+必需依赖缺失时，直接回车联网安装；输入任意字符后回车取消整个流程。安装失败或复检仍不可用时停止，不继续清理旧产物或打包。健康依赖直接复用；可选升级和词库更新仍为回车跳过、任意字符执行。
+
+第一层交付目录与平台打包脚本同层保存 `dist/`，以及最新 APP / DMG 的相对符号链接（Mac）或 EXE / 分发包的 `.lnk`（Windows）。双击快捷方式即可接触成品，真实文件保留在 `dist/`；成功构建自动更新入口，清理旧产物时移除对应旧入口。尚无成品时不生成无效快捷方式。
+
+构建产物使用本机本地构建时间，格式为 `YYYY.MM.DD HH-mm-ss`（年月日时分秒），例如 `2020.06.04 12-23-21`。每次构建的 APP、DMG、EXE、ZIP 和配套文件统一保存到交付层 `./dist/YYYY.MM.DD HH-mm-ss/`，同次构建只取一次时间；第一层快捷方式指向本次时间目录，成功后打开该目录并启动其中的软件。旧产物沿用原有清理规则；历史产物缺少可靠构建时间时，不补写推测时间。
 
 <a id="🔚" href="#前言" style="font-size:17px; color:green; font-weight:bold;">我是有底线的➤点我回到首页</a>

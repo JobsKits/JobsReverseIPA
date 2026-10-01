@@ -48,7 +48,13 @@ show_script_intro_and_wait() {
   echo ""
   read -r "?已了解脚本用途与影响，按回车继续；按 Ctrl+C 取消：" _
 }
-# 普通安装、升级和修复动作统一询问；回车执行，输入 n 跳过。
+# 缺失依赖回车安装，任意字符或 EOF 取消整个体检流程。
+confirm_required_install() {
+  local answer=""
+  IFS= read -r "?${1}（直接回车安装；输入任意字符后回车取消）：" answer || exit 1
+  [[ -z "$answer" ]] || { error_echo "已取消依赖安装，停止当前流程。"; exit 1; }
+}
+# 已有依赖的可选升级与修复沿用体检器现有策略。
 ask_any_to_run() {
   if [[ "$AUTO_FIX_ALL" == "1" ]]; then
     return 0
@@ -192,7 +198,7 @@ ensure_project_venv() {
     success_echo "已存在：项目 Python 虚拟环境 -> ${VENV_DIR}"
   else
     warn_echo "缺失：项目 Python 虚拟环境 -> ${VENV_DIR}"
-    if ask_any_to_run "是否创建项目 Python 虚拟环境"; then
+    if confirm_required_install "是否创建项目 Python 虚拟环境"; then
       "$python_bin" -m venv "$VENV_DIR" 2>&1 | tee -a "$LOG_FILE"
     fi
   fi
@@ -226,8 +232,9 @@ check_python_packages() {
       fi
     else
       warn_echo "缺失：${package_name}"
-      if ask_any_to_run "是否安装 Python 包 ${package_name}"; then
-        "$VENV_PYTHON" -m pip install "$package_name" 2>&1 | tee -a "$LOG_FILE"
+      if confirm_required_install "需要安装 Python 包 ${package_name}"; then
+        "$VENV_PYTHON" -m pip install "$package_name" 2>&1 | tee -a "$LOG_FILE" || return 1
+        "$VENV_PYTHON" -c "import ${package_name}" || return 1
       fi
     fi
   done
@@ -239,7 +246,7 @@ check_xcode_command_line_tools() {
     success_echo "已安装：Xcode Command Line Tools -> $(xcode-select -p)"
   else
     warn_echo "缺失：Xcode Command Line Tools"
-    if ask_any_to_run "是否打开 Xcode Command Line Tools 安装器"; then
+    if confirm_required_install "需要打开 Xcode Command Line Tools 安装器"; then
       xcode-select --install 2>&1 | tee -a "$LOG_FILE"
     fi
   fi
@@ -264,7 +271,7 @@ check_homebrew() {
     return 0
   fi
   warn_echo "缺失：Homebrew"
-  if ask_any_to_run "是否安装 Homebrew"; then
+  if confirm_required_install "需要安装 Homebrew"; then
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" 2>&1 | tee -a "$LOG_FILE"
   fi
 }
@@ -284,7 +291,7 @@ check_brew_formulas() {
       fi
     else
       warn_echo "缺失：${formula_name}"
-      if ask_any_to_run "是否安装 ${formula_name}"; then
+      if confirm_required_install "需要安装 ${formula_name}"; then
         run_brew_command "$brew_bin" install "$formula_name"
       fi
     fi
@@ -323,7 +330,7 @@ check_ghidra() {
     warn_echo "未找到 Homebrew，无法自动安装 Ghidra。"
     return 0
   }
-  if ask_any_to_run "是否通过 Homebrew 安装 Ghidra"; then
+  if confirm_required_install "需要通过 Homebrew 安装 Ghidra"; then
     run_brew_command "$brew_bin" install ghidra
     ghidra_path="$(find_ghidra_headless)" && link_ghidra_headless "$ghidra_path"
   fi
@@ -341,7 +348,7 @@ check_jtool2() {
     warn_echo "未找到 Homebrew，无法尝试自动安装 jtool2。"
     return 0
   }
-  if ask_any_to_run "是否尝试通过 Homebrew Cask 安装 jtool2"; then
+  if confirm_required_install "需要通过 Homebrew Cask 安装 jtool2"; then
     if ! run_brew_command "$brew_bin" install --cask jtool2; then
       warn_echo "jtool2 的 Homebrew Cask 当前已 discontinued / disabled，无法可靠自动安装。"
       note_echo "可手动下载 jtool2 后放到：$(get_bundled_tool_dir)/jtool2，并执行 chmod +x。"

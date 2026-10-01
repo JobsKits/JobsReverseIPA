@@ -13,7 +13,8 @@ LOG_FILE="${TMPDIR:-/tmp}/${SCRIPT_BASENAME}.log"
 
 VENV_DIR="${PROJECT_ROOT}/.venv"
 BUILD_DIR="${PROJECT_ROOT}/build"
-DIST_DIR="${PROJECT_ROOT}/dist"
+DIST_ROOT="${SCRIPT_DIR}/dist"
+DIST_DIR="$DIST_ROOT"
 SPEC_FILE="${PROJECT_ROOT}/IPAReverseAnalysisTool.spec"
 APP_BUNDLE="${DIST_DIR}/IPA Reverse Analysis Tool.app"
 DMG_PATH="${DIST_DIR}/IPA-Reverse-Analysis-Tool-macOS.dmg"
@@ -51,6 +52,8 @@ show_script_intro_and_wait() {
   gray_echo "取消方式：按 Ctrl+C 终止。"
   highlight_echo "======================================================================="
   echo ""
+  print '构建产物按本机年月日时分秒保存到 dist/YYYY.MM.DD HH-mm-ss/（例如 2020.06.04 12-23-21），同次构建共用一个时间目录。'
+  print '打包前清理旧 dist；成功后在第一层更新产物快捷方式、打开目录并启动本机软件。'
   read -r "?已了解脚本用途与影响，按回车继续；按 Ctrl+C 取消：" _
 }
 # 普通升级动作默认跳过，输入任意字符后才执行。
@@ -102,6 +105,12 @@ check_environment() {
   info_echo "Python：$(python3 --version 2>&1)"
   info_echo "项目目录：${PROJECT_ROOT}"
 }
+# 必需依赖缺失时回车安装，任意字符取消整个流程。
+confirm_required_install() {
+  local answer=""
+  IFS= read -r "?${1}（直接回车安装；输入任意字符后回车取消）：" answer || { print -u2 '没有交互输入，停止依赖安装。'; exit 1; }
+  [[ -z "$answer" ]] || { print -u2 '已取消依赖安装，停止当前流程。'; exit 1; }
+}
 # 创建或复用虚拟环境，并安装项目构建依赖。
 prepare_python_environment() {
   info_echo "创建 / 复用虚拟环境：${VENV_DIR}"
@@ -112,21 +121,32 @@ prepare_python_environment() {
   else
     gray_echo "已跳过 pip 升级。"
   fi
-  info_echo "安装 requirements.txt 中的运行和构建依赖"
-  run_logged python -m pip install -r "${PROJECT_ROOT}/requirements.txt"
+  if ! python -c 'import PySide6.QtWidgets, PyInstaller, macholib, lief, r2pipe, jinja2, rich' >/dev/null 2>&1; then
+    confirm_required_install "需要联网补齐工程依赖"
+    run_logged python -m pip install -r "${PROJECT_ROOT}/requirements.txt"
+    python -c 'import PySide6.QtWidgets, PyInstaller, macholib, lief, r2pipe, jinja2, rich' || return 1
+  fi
 }
 # 清理旧构建目录，避免旧产物污染本次结果。
 clean_build_outputs() {
-  if ! confirm_yes "即将删除旧构建目录：${BUILD_DIR} 和 ${DIST_DIR}"; then
+  [[ ! -L "$DIST_ROOT" ]] || { error_echo "拒绝清理符号链接 dist"; return 1; }
+  if ! confirm_yes "即将删除旧构建目录：${BUILD_DIR} 和 ${DIST_ROOT}"; then
     warn_echo "未收到 YES，已取消本次构建。"
     return 1
   fi
-  rm -rf -- "$BUILD_DIR" "$DIST_DIR"
+  run_logged python "${PROJECT_ROOT}/scripts/artifact_shortcuts.py" --root "$SCRIPT_DIR" --clear
+  rm -rf -- "$BUILD_DIR" "$DIST_ROOT"
+  BUILD_STAMP="$(date "+%Y.%m.%d %H-%M-%S")"
+  DIST_DIR="${DIST_ROOT}/${BUILD_STAMP}"
+  APP_BUNDLE="${DIST_DIR}/IPA Reverse Analysis Tool.app"
+  DMG_PATH="${DIST_DIR}/IPA-Reverse-Analysis-Tool-macOS.dmg"
+  DMG_STAGING="${DIST_DIR}/dmg_staging"
+  info_echo "构建时间（年月日时分秒）：${BUILD_STAMP}"
 }
 # 使用统一 spec 构建 macOS App Bundle。
 build_macos_app() {
   info_echo "开始构建 macOS App。"
-  run_logged pyinstaller --noconfirm --clean "$SPEC_FILE"
+  run_logged pyinstaller --noconfirm --clean --distpath "$DIST_DIR" "$SPEC_FILE"
   if [[ ! -d "$APP_BUNDLE" ]]; then
     error_echo "未找到 App Bundle：${APP_BUNDLE}"
     return 1
@@ -160,6 +180,9 @@ show_build_result() {
   warn_echo "当前为本地 ad-hoc 签名；正式分发仍需 Developer ID 签名和 notarization。"
   info_echo "完整日志：${LOG_FILE}"
   highlight_echo "========================================================================"
+  run_logged python "${PROJECT_ROOT}/scripts/artifact_shortcuts.py" --root "$SCRIPT_DIR" "$APP_BUNDLE" "$DMG_PATH"
+  open "$DIST_DIR" || return 1
+  open "$APP_BUNDLE" || return 1
 }
 # 编排 macOS App 和 DMG 构建流程。
 main() {
