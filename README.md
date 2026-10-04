@@ -42,7 +42,7 @@
 
 ## 二、打包方式 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
-### 2.1、macOS
+### 2.1、macOS <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 在 Finder 中双击：
 
@@ -59,7 +59,7 @@
 ./dist/YYYY.MM.DD HH-mm-ss/IPA-Reverse-Analysis-Tool-macOS.dmg
 ```
 
-### 2.2、Windows
+### 2.2、Windows <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 在 Windows 中双击：
 
