@@ -5,6 +5,29 @@
 # - 影响范围：会创建或复用内层 JobsReverseIPA/.venv，并在确认后删除旧 build / dist 构建目录。
 # - 运行提示：运行后先打印内置自述；按回车确认后继续，按 Ctrl+C 可取消。
 
+# 仅渲染自述：标题红色加粗，编号正文蓝色常规字重；非彩色终端输出纯文本。
+jobs_intro_style() {
+  local intro_color=0
+  if [ -t 1 ] && [ -n "${TERM:-}" ] && [ "${TERM:-}" != dumb ] &&
+     [ -z "${NO_COLOR+x}" ] && [ "${PLAIN_OUTPUT:-0}" != 1 ] &&
+     [ "${IS_SOURCETREE_RUNTIME:-0}" != 1 ]; then
+    intro_color=1
+  fi
+  /usr/bin/awk -v color="$intro_color" -v role="${1:-body}" '
+    BEGIN { esc = sprintf("%c", 27) }
+    {
+      gsub(esc "\\[[0-9;]*m", "")
+      gsub(/\\(033|e|x1[bB])\[[0-9;]*m/, "")
+      if (!color || $0 ~ /^[[:space:]]*$/) { print; next }
+      numbered = ($0 ~ /^[[:space:]➤ℹ🔹✔⚠]*([0-9]+[、.)）]|[0-9]+️⃣|[-•])/)
+      heading = ($0 ~ /^[[:space:]]*#{1,6}[[:space:]]/ || $0 ~ /[：:][[:space:]]*$/ || $0 ~ /^[[:space:]]*[=━─-]{3}/)
+      title = (!numbered && (role == "title" || heading))
+      if (role == "auto" && !seen && !numbered) title = 1
+      if ($0 !~ /^[[:space:]]*[=━─-]+[[:space:]]*$/) seen = 1
+      printf "%s%s%s\n", esc (title ? "[1;31m" : "[0;34m"), $0, esc "[0m"
+    }
+  '
+}
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%x}}")" && pwd)"
 SCRIPT_PATH="${SCRIPT_DIR}/$(basename -- "$0")"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/JobsReverseIPA" && pwd -P)"
@@ -43,17 +66,17 @@ run_logged() {
 # 打印脚本内置自述，并等待用户确认。
 show_script_intro_and_wait() {
   clear
-  highlight_echo "============================== 脚本自述 =============================="
-  note_echo "当前脚本：${SCRIPT_PATH}"
-  note_echo "核心用途：从 Python 源码构建 macOS App 和 DMG 安装包。"
-  warn_echo "影响范围：确认后会在内层 JobsReverseIPA/ 安装构建依赖；清理旧 build / dist 前必须输入 YES。"
-  gray_echo "输出目录：${DIST_DIR}"
-  gray_echo "日志位置：${LOG_FILE}"
-  gray_echo "取消方式：按 Ctrl+C 终止。"
-  highlight_echo "======================================================================="
-  echo ""
-  print '构建产物按本机年月日时分秒保存到 dist/YYYY.MM.DD HH-mm-ss/（例如 2020.06.04 12-23-21），同次构建共用一个时间目录。'
-  print '打包前清理旧 dist；成功后在第一层更新产物快捷方式、打开目录并启动本机软件。'
+  highlight_echo "============================== 脚本自述 ==============================" | jobs_intro_style title
+  note_echo "当前脚本：${SCRIPT_PATH}" | jobs_intro_style body
+  note_echo "核心用途：从 Python 源码构建 macOS App 和 DMG 安装包。" | jobs_intro_style body
+  warn_echo "影响范围：确认后会在内层 JobsReverseIPA/ 安装构建依赖；清理旧 build / dist 前必须输入 YES。" | jobs_intro_style body
+  gray_echo "输出目录：${DIST_DIR}" | jobs_intro_style body
+  gray_echo "日志位置：${LOG_FILE}" | jobs_intro_style body
+  gray_echo "取消方式：按 Ctrl+C 终止。" | jobs_intro_style body
+  highlight_echo "=======================================================================" | jobs_intro_style title
+  echo "" | jobs_intro_style body
+  print '构建产物按本机年月日时分秒保存到 dist/YYYY.MM.DD HH-mm-ss/（例如 2020.06.04 12-23-21），同次构建共用一个时间目录。' | jobs_intro_style body
+  print '打包前清理旧 dist；成功后在第一层更新产物快捷方式、打开目录并启动本机软件。' | jobs_intro_style body
   read -r "?已了解脚本用途与影响，按回车继续；按 Ctrl+C 取消：" _
 }
 # 普通升级动作默认跳过，输入任意字符后才执行。

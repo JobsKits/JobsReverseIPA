@@ -4,6 +4,29 @@
 # - 核心用途：检查并修复 IPA 逆向分析工具所需的 Python 包、Apple CLT、Homebrew、radare2、Java、Ghidra 等环境。
 # - 影响范围：可能安装或升级 Python 包、Homebrew 公式和 Xcode Command Line Tools；默认回车执行，输入 n 才跳过。
 # - 运行提示：运行后会先打印内置自述；确认后在终端输出结果，不默认生成报告文件。
+# 仅渲染自述：标题红色加粗，编号正文蓝色常规字重；非彩色终端输出纯文本。
+jobs_intro_style() {
+  local intro_color=0
+  if [ -t 1 ] && [ -n "${TERM:-}" ] && [ "${TERM:-}" != dumb ] &&
+     [ -z "${NO_COLOR+x}" ] && [ "${PLAIN_OUTPUT:-0}" != 1 ] &&
+     [ "${IS_SOURCETREE_RUNTIME:-0}" != 1 ]; then
+    intro_color=1
+  fi
+  /usr/bin/awk -v color="$intro_color" -v role="${1:-body}" '
+    BEGIN { esc = sprintf("%c", 27) }
+    {
+      gsub(esc "\\[[0-9;]*m", "")
+      gsub(/\\(033|e|x1[bB])\[[0-9;]*m/, "")
+      if (!color || $0 ~ /^[[:space:]]*$/) { print; next }
+      numbered = ($0 ~ /^[[:space:]➤ℹ🔹✔⚠]*([0-9]+[、.)）]|[0-9]+️⃣|[-•])/)
+      heading = ($0 ~ /^[[:space:]]*#{1,6}[[:space:]]/ || $0 ~ /[：:][[:space:]]*$/ || $0 ~ /^[[:space:]]*[=━─-]{3}/)
+      title = (!numbered && (role == "title" || heading))
+      if (role == "auto" && !seen && !numbered) title = 1
+      if ($0 !~ /^[[:space:]]*[=━─-]+[[:space:]]*$/) seen = 1
+      printf "%s%s%s\n", esc (title ? "[1;31m" : "[0;34m"), $0, esc "[0m"
+    }
+  '
+}
 setopt NO_NOMATCH
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%x}}")" && pwd)"
@@ -36,16 +59,16 @@ gray_echo() { log "\033[0;90m$1\033[0m"; }
 # 打印脚本内置自述，并等待用户确认。
 show_script_intro_and_wait() {
   clear
-  highlight_echo "============================== 脚本自述 =============================="
-  note_echo "当前脚本：${SCRIPT_PATH}"
-  note_echo "核心用途：检查并修复 IPA 逆向分析工具所需环境。"
-  warn_echo "影响范围：可能安装或升级 Python 包、Homebrew 公式和 Xcode Command Line Tools。"
-  gray_echo "输出策略：结果直接打印在终端；不默认生成 doctor_report 文件。"
-  gray_echo "执行策略：回车自动安装缺失项并升级已安装项；输入 n 才跳过。"
-  gray_echo "日志位置：${LOG_FILE}"
-  gray_echo "取消方式：按 Ctrl+C 终止，不会继续执行后续业务。"
-  highlight_echo "======================================================================="
-  echo ""
+  highlight_echo "============================== 脚本自述 ==============================" | jobs_intro_style title
+  note_echo "当前脚本：${SCRIPT_PATH}" | jobs_intro_style body
+  note_echo "核心用途：检查并修复 IPA 逆向分析工具所需环境。" | jobs_intro_style body
+  warn_echo "影响范围：可能安装或升级 Python 包、Homebrew 公式和 Xcode Command Line Tools。" | jobs_intro_style body
+  gray_echo "输出策略：结果直接打印在终端；不默认生成 doctor_report 文件。" | jobs_intro_style body
+  gray_echo "执行策略：回车自动安装缺失项并升级已安装项；输入 n 才跳过。" | jobs_intro_style body
+  gray_echo "日志位置：${LOG_FILE}" | jobs_intro_style body
+  gray_echo "取消方式：按 Ctrl+C 终止，不会继续执行后续业务。" | jobs_intro_style body
+  highlight_echo "=======================================================================" | jobs_intro_style title
+  echo "" | jobs_intro_style body
   read -r "?已了解脚本用途与影响，按回车继续；按 Ctrl+C 取消：" _
 }
 # 缺失依赖回车安装，任意字符或 EOF 取消整个体检流程。
